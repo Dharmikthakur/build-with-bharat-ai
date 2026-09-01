@@ -1,6 +1,6 @@
 {
-  "name": "CreatorEscrow AI & x402 Algorand Marketplace",
-  "description": "AI-powered creator campaign marketplace with Algorand Smart Contract Escrow (Flow A) and x402 GoPlausible pay-per-use M2M micropayments (Flow B).",
+  "name": "CreatorEscrow Algorand Marketplace",
+  "description": "Creator campaign marketplace with Algorand Smart Contract Milestone Escrows and AI matchmaker.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

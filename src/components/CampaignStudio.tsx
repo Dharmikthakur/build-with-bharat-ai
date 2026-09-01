@@ -113,9 +113,6 @@ export const CampaignStudio: React.FC<CampaignStudioProps> = ({
       setDeployStep(`Locking ${budgetAlgo.toLocaleString()} ALGO into Escrow Account...`);
       await new Promise(r => setTimeout(r, 800));
 
-      setDeployStep('Settling 0.03 ALGO x402 GoPlausible Facilitator Fee...');
-      await new Promise(r => setTimeout(r, 500));
-
       const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,20 +167,8 @@ export const CampaignStudio: React.FC<CampaignStudioProps> = ({
             </h1>
           </div>
           <p className="mt-1.5 text-sm text-zinc-400 max-w-2xl">
-            Input your raw campaign goals. Gemini 3.7 Flash decomposes your requirements into quantifiable milestones, and our Algorand smart contract securely locks funds until verified by autonomous AI oracles.
+            Input your raw campaign goals. Gemini 3.7 Flash decomposes your requirements into quantifiable milestones, and our Algorand smart contract securely locks funds until verified by milestone criteria.
           </p>
-        </div>
-
-        {/* Dual Flow Pill Badge */}
-        <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 p-2 text-xs">
-          <div className="flex items-center gap-1.5 text-emerald-400 font-medium px-2 py-1 bg-emerald-500/10 rounded-lg">
-            <Lock className="h-3.5 w-3.5" />
-            Flow A: Algorand Escrow
-          </div>
-          <div className="flex items-center gap-1.5 text-cyan-400 font-medium px-2 py-1 bg-cyan-500/10 rounded-lg">
-            <Zap className="h-3.5 w-3.5" />
-            Flow B: x402 Micropayments
-          </div>
         </div>
       </div>
 
@@ -307,14 +292,14 @@ export const CampaignStudio: React.FC<CampaignStudioProps> = ({
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 py-3 text-xs font-bold text-zinc-950 shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-cyan-400 transition disabled:opacity-50"
             >
               {isDecomposing ? (
-                <>
+                 <>
                   <RefreshCw className="h-4 w-4 animate-spin text-zinc-950" />
                   Gemini 3.7 Flash Decomposing Campaign...
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  Decompose with AI Agent (0.03 ALGO x402 Fee)
+                  Decompose with AI Agent
                 </>
               )}
             </button>
@@ -342,10 +327,6 @@ export const CampaignStudio: React.FC<CampaignStudioProps> = ({
                 <span className="flex items-center gap-1 rounded-md bg-zinc-800/80 px-2.5 py-1">
                   <Lock className="h-3 w-3 text-cyan-400" />
                   Algorand ARC-4 Escrow Ready
-                </span>
-                <span className="flex items-center gap-1 rounded-md bg-zinc-800/80 px-2.5 py-1">
-                  <Zap className="h-3 w-3 text-purple-400" />
-                  x402 GoPlausible Oracle
                 </span>
               </div>
             </div>
@@ -499,13 +480,13 @@ export const CampaignStudio: React.FC<CampaignStudioProps> = ({
                     ) : (
                       <>
                         <Lock className="h-4 w-4" />
-                        Lock {budgetAlgo.toLocaleString()} ALGO in Algorand Smart Contract Escrow (Flow A)
+                        Lock {budgetAlgo.toLocaleString()} ALGO in Algorand Smart Contract Escrow
                       </>
                     )}
                   </button>
 
                   <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-                    <span>Includes 0.03 ALGO x402 GoPlausible M2M fee</span>
+                    <span>Non-custodial Algorand ARC-4 Escrow</span>
                     <span className="text-emerald-400 font-medium">ARC-4 PyTeAL Compatible</span>
                   </div>
                 </div>

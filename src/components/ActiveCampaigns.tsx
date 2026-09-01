@@ -26,16 +26,12 @@ import { Campaign, Milestone, AlgorandWalletState } from '../types';
 
 interface ActiveCampaignsProps {
   campaigns: Campaign[];
-  onSelectCampaignForVerification: (campaign: Campaign, milestone: Milestone) => void;
-  onSelectCampaignForSubmission: (campaign: Campaign, milestone: Milestone) => void;
   wallet: AlgorandWalletState;
   onRefreshCampaigns: () => void;
 }
 
 export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
   campaigns,
-  onSelectCampaignForVerification,
-  onSelectCampaignForSubmission,
   wallet,
   onRefreshCampaigns,
 }) => {
@@ -43,6 +39,12 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isReleasing, setIsReleasing] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isVerifying, setIsVerifying] = useState<string | null>(null);
+  const [submissionMilestone, setSubmissionMilestone] = useState<{ campaign: Campaign; milestone: Milestone } | null>(null);
+  const [deliverableUrl, setDeliverableUrl] = useState('https://x.com/creator/status/192837482');
+  const [reportedViews, setReportedViews] = useState('45000');
+  const [deliverableNotes, setDeliverableNotes] = useState('Campaign content published live.');
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   const filteredCampaigns = campaigns.filter(c => {
@@ -58,6 +60,62 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedAddress(text);
     setTimeout(() => setCopiedAddress(null), 2000);
+  };
+
+  const handleOpenSubmitModal = (campaign: Campaign, milestone: Milestone) => {
+    setSubmissionMilestone({ campaign, milestone });
+    setReportedViews(String(milestone.targetMetric.targetValue || 25000));
+  };
+
+  const handleSubmitProof = async () => {
+    if (!submissionMilestone) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/campaigns/${submissionMilestone.campaign.id}/milestones/${submissionMilestone.milestone.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deliverableUrl,
+          notes: deliverableNotes,
+          reportedViews: Number(reportedViews) || submissionMilestone.milestone.targetMetric.targetValue,
+        }),
+      });
+      if (res.ok) {
+        setSubmissionMilestone(null);
+        onRefreshCampaigns();
+      }
+    } catch (err) {
+      console.error('Error submitting deliverable proof:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyMilestone = async (campaignId: string, milestoneId: string) => {
+    setIsVerifying(milestoneId);
+    try {
+      const res = await fetch(`/api/oracle/verify-deliverable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId,
+          milestoneId,
+        }),
+      });
+      if (res.ok) {
+        confetti({
+          particleCount: 50,
+          spread: 50,
+          origin: { y: 0.6 },
+          colors: ['#10b981', '#38bdf8', '#a855f7'],
+        });
+        onRefreshCampaigns();
+      }
+    } catch (err) {
+      console.error('Error verifying milestone:', err);
+    } finally {
+      setIsVerifying(null);
+    }
   };
 
   const handleReleasePayout = async (campaignId: string, milestoneId: string) => {
@@ -93,11 +151,11 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
               <Lock className="h-4 w-4" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-100 sm:text-3xl">
-              Algorand Escrow & Campaign Manager (Flow A)
+              Algorand Escrow & Campaign Manager
             </h1>
           </div>
           <p className="mt-1.5 text-sm text-zinc-400 max-w-2xl">
-            Live on-chain inspection of Algorand ARC-4 smart contract escrows. Funds remain locked until AI Oracles verify milestone deliverable metrics.
+            Live on-chain inspection of Algorand ARC-4 smart contract escrows. Funds remain locked until deliverable milestones are verified and released.
           </p>
         </div>
 
@@ -250,7 +308,7 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
                 </div>
               </div>
 
-              {/* Algorand Smart Contract Metadata Grid (Flow A) */}
+              {/* Algorand Smart Contract Metadata Grid */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/90 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-semibold text-zinc-100">
@@ -443,7 +501,7 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
                             <div className="flex items-center gap-2">
                               {ms.status === 'pending' && (
                                 <button
-                                  onClick={() => onSelectCampaignForSubmission(activeCampaign, ms)}
+                                  onClick={() => handleOpenSubmitModal(activeCampaign, ms)}
                                   className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-700 transition"
                                 >
                                   Submit Proof
@@ -452,11 +510,16 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
 
                               {ms.status === 'submitted' && (
                                 <button
-                                  onClick={() => onSelectCampaignForVerification(activeCampaign, ms)}
-                                  className="flex items-center gap-1 rounded-lg bg-purple-600 px-3 py-1.5 text-[11px] font-bold text-white shadow hover:bg-purple-500 transition"
+                                  onClick={() => handleVerifyMilestone(activeCampaign.id, ms.id)}
+                                  disabled={isVerifying === ms.id}
+                                  className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow hover:bg-emerald-500 transition disabled:opacity-50"
                                 >
-                                  <Sparkles className="h-3 w-3" />
-                                  Run AI Oracle
+                                  {isVerifying === ms.id ? (
+                                    <RefreshCw className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="h-3 w-3" />
+                                  )}
+                                  Verify Milestone
                                 </button>
                               )}
 
@@ -469,7 +532,7 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
                                   {isReleasing === ms.id ? (
                                     <RefreshCw className="h-3 w-3 animate-spin" />
                                   ) : (
-                                    <Zap className="h-3 w-3" />
+                                    <CheckCircle2 className="h-3 w-3" />
                                   )}
                                   Release {ms.payoutAlgo} ALGO
                                 </button>
@@ -497,6 +560,85 @@ export const ActiveCampaigns: React.FC<ActiveCampaignsProps> = ({
           )}
         </div>
       </div>
+
+      {/* Submit Proof Modal */}
+      {submissionMilestone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-zinc-100">Submit Milestone Proof</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">{submissionMilestone.milestone.title}</p>
+              </div>
+              <button
+                onClick={() => setSubmissionMilestone(null)}
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300">Deliverable Post / Media URL</label>
+                <input
+                  type="text"
+                  value={deliverableUrl}
+                  onChange={(e) => setDeliverableUrl(e.target.value)}
+                  placeholder="https://x.com/creator/status/..."
+                  className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300">
+                  Target: {submissionMilestone.milestone.targetMetric.targetValue.toLocaleString()} {submissionMilestone.milestone.targetMetric.unit}
+                </label>
+                <input
+                  type="number"
+                  value={reportedViews}
+                  onChange={(e) => setReportedViews(e.target.value)}
+                  placeholder="Reported metric value"
+                  className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300">Submission Notes</label>
+                <textarea
+                  rows={3}
+                  value={deliverableNotes}
+                  onChange={(e) => setDeliverableNotes(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setSubmissionMilestone(null)}
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleSubmitProof}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                  Confirm Submission
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

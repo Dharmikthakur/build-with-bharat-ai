@@ -10,7 +10,6 @@ import {
   ShieldCheck, 
   ArrowUpRight, 
   RefreshCw,
-  Zap,
   Lock
 } from 'lucide-react';
 import { AlgorandWalletState } from '../types';
@@ -187,7 +186,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         {/* Switch Persona / Accounts */}
         <div className="mt-5">
           <label className="text-xs font-medium text-zinc-400">
-            Quick Persona Switcher (Simulate Flow A / B Roles):
+            Quick Persona Switcher (Simulate Brand & Creator Roles):
           </label>
           <div className="mt-2 space-y-2">
             {PRESET_ACCOUNTS.map((acc) => {
@@ -220,17 +219,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({
               );
             })}
           </div>
-        </div>
-
-        {/* Micro-Payment Protocol Info */}
-        <div className="mt-5 rounded-xl border border-cyan-500/20 bg-cyan-950/20 p-3.5 text-xs text-cyan-200">
-          <div className="flex items-center gap-2 font-semibold text-cyan-300">
-            <Zap className="h-4 w-4 text-cyan-400" />
-            x402 GoPlausible Facilitator Ready
-          </div>
-          <p className="mt-1 text-[11px] text-zinc-300">
-            All AI verification, deliverable OCR, and metric tracking calls trigger atomic micro-payments on Algorand Testnet (0.01 - 0.05 ALGO).
-          </p>
         </div>
 
         {/* Action Button */}
